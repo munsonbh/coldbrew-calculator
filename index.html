@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cold Brew Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f7f7f5;
+      --ink: #0a0a0a;
+      --muted: #5c5c5c;
+      --line: #0a0a0a;
+      --panel: #ffffff;
+      --focus: #0a0a0a;
+      --warn: #0a0a0a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at 12% 8%, rgba(0, 0, 0, 0.04), transparent 42%),
+        radial-gradient(circle at 88% 0%, rgba(0, 0, 0, 0.03), transparent 36%),
+        var(--bg);
+      color: var(--ink);
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    body {
+      padding: 2.5rem 1.25rem 4rem;
+    }
+
+    .wrap {
+      width: min(720px, 100%);
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 2.5rem;
+      animation: rise 480ms ease-out both;
+    }
+
+    h1 {
+      font-family: "Libre Baskerville", Georgia, serif;
+      font-size: clamp(2.1rem, 5vw, 3rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+      margin: 0 0 0.75rem;
+    }
+
+    .lede {
+      color: var(--muted);
+      max-width: 38ch;
+      margin: 0;
+    }
+
+    .grid {
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 720px) {
+      .grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        align-items: start;
+      }
+    }
+
+    section {
+      background: var(--panel);
+      border: 1.5px solid var(--line);
+      padding: 1.25rem 1.25rem 1.35rem;
+      animation: rise 560ms ease-out both;
+    }
+
+    section:nth-of-type(2) {
+      animation-delay: 60ms;
+    }
+
+    h2 {
+      font-family: "Libre Baskerville", Georgia, serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin: 0 0 1.1rem;
+      letter-spacing: -0.01em;
+    }
+
+    .field {
+      display: grid;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+    }
+
+    .field:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    input[type="text"] {
+      width: 100%;
+      appearance: none;
+      border: 1.5px solid var(--line);
+      background: var(--bg);
+      color: var(--ink);
+      font: inherit;
+      font-size: 1.15rem;
+      padding: 0.7rem 0.8rem;
+      border-radius: 0;
+    }
+
+    input[type="text"]:focus {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    input[type="text"].invalid {
+      border-color: var(--ink);
+      background: #ececec;
+    }
+
+    .ratio-input {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .ratio-input .prefix {
+      font-family: "Libre Baskerville", Georgia, serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .ratio-input input {
+      max-width: 6rem;
+    }
+
+    .error {
+      font-size: 0.75rem;
+      color: var(--ink);
+      min-height: 1.1em;
+    }
+
+    .actions {
+      margin-top: 1.25rem;
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      border: 1.5px solid var(--ink);
+      background: var(--ink);
+      color: var(--panel);
+      font: inherit;
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.85rem 1rem;
+      cursor: pointer;
+    }
+
+    button[type="submit"]:hover {
+      background: var(--panel);
+      color: var(--ink);
+    }
+
+    button[type="submit"]:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 3px;
+    }
+
+    .results {
+      display: grid;
+      gap: 0.85rem;
+    }
+
+    .result {
+      display: grid;
+      gap: 0.15rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid #d8d8d4;
+    }
+
+    .result:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .result .label {
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .result .value {
+      font-family: "Libre Baskerville", Georgia, serif;
+      font-size: clamp(1.55rem, 4vw, 1.9rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .result .unit {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.85rem;
+      font-weight: 400;
+      color: var(--muted);
+      margin-left: 0.25rem;
+    }
+
+    .minerals {
+      display: grid;
+      gap: 0.55rem;
+      margin-top: 0.15rem;
+    }
+
+    .mineral {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: baseline;
+      font-size: 0.92rem;
+    }
+
+    .mineral span:last-child {
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .meta {
+      margin-top: 1rem;
+      padding-top: 0.9rem;
+      border-top: 1px solid #d8d8d4;
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: grid;
+      gap: 0.35rem;
+    }
+
+    .note {
+      margin-top: 1.75rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      max-width: 62ch;
+      animation: rise 640ms ease-out both;
+      animation-delay: 100ms;
+    }
+
+    .note a {
+      color: var(--ink);
+    }
+
+    .warn {
+      margin-top: 0.85rem;
+      border: 1.5px solid var(--ink);
+      padding: 0.65rem 0.75rem;
+      font-size: 0.78rem;
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Cold Brew Calculator</h1>
+      <p class="lede">Mason jar ratios, Hendon-style mineral targets, and coffee dose — mixed units on purpose.</p>
+    </header>
+
+    <div class="grid">
+      <section aria-labelledby="inputs-heading">
+        <h2 id="inputs-heading">Inputs</h2>
+
+        <form id="calc-form" novalidate>
+          <div class="field">
+            <label for="container">Container size</label>
+            <input id="container" name="container" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="32" />
+            <p class="hint">Fluid ounces, whole number (e.g. 16, 32, 64)</p>
+            <p class="error" id="container-error" aria-live="polite"></p>
+          </div>
+
+          <div class="field">
+            <label for="tds">Water hardness (TDS)</label>
+            <input id="tds" name="tds" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="0" />
+            <p class="hint">Tap reading in ppm, whole number · 0 = distilled</p>
+            <p class="error" id="tds-error" aria-live="polite"></p>
+          </div>
+
+          <div class="field">
+            <label for="ratio">Strength ratio</label>
+            <div class="ratio-input">
+              <span class="prefix">1:</span>
+              <input id="ratio" name="ratio" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="8" aria-describedby="ratio-hint" />
+            </div>
+            <p class="hint" id="ratio-hint">Coffee : water by weight · whole number 4–16</p>
+            <p class="error" id="ratio-error" aria-live="polite"></p>
+          </div>
+
+          <div class="actions">
+            <button type="submit">Calculate</button>
+          </div>
+        </form>
+      </section>
+
+      <section aria-labelledby="results-heading">
+        <h2 id="results-heading">Brew sheet</h2>
+        <div class="results" id="results">
+          <p class="hint">Enter values and press Calculate.</p>
+        </div>
+      </section>
+    </div>
+
+    <p class="note">
+      Mineral doses scale from a 1-quart Hendon-style compound table keyed to tap TDS.
+      Coffee and water share the jar using the same coarse-grind displacement math as
+      <a href="https://coldbrewratiocalculator.com/coffee-ratio-calculator/" rel="noopener noreferrer">coldbrewratiocalculator.com</a>
+      (grounds ≈ 85 g per cup of volume). Targets follow
+      <a href="https://vauldt.github.io/all-about-coffee/coffee/coffee-brewing/hendon-study/" rel="noopener noreferrer">Hendon 2014</a>
+      (Mg-forward hardness, moderated alkalinity).
+    </p>
+  </div>
+
+  <script>
+    /**
+     * Grams of each compound per US quart (32 fl oz), by tap TDS (ppm).
+     * Source: source/hendon compounds.csv
+     * CaCl2 column is anhydrous (converted from CaCl2·2H2O × 110.98/147.01).
+     */
+    const HENDON_TABLE = [
+      { tds: 0, epsom: 1.43, cacl2: 0.5209, soda: 0.41, gh: 0, kh: 0 },
+      { tds: 10, epsom: 1.38, cacl2: 0.5058, soda: 0.32, gh: 2, kh: 7 },
+      { tds: 20, epsom: 1.33, cacl2: 0.4831, soda: 0.22, gh: 4, kh: 15 },
+      { tds: 30, epsom: 1.28, cacl2: 0.4680, soda: 0.12, gh: 6, kh: 22 },
+      { tds: 40, epsom: 1.23, cacl2: 0.4529, soda: 0.03, gh: 8, kh: 29 },
+      { tds: 50, epsom: 1.18, cacl2: 0.4379, soda: 0, gh: 10, kh: 37 },
+      { tds: 60, epsom: 0.95, cacl2: 0.3699, soda: 0, gh: 19, kh: 44 },
+      { tds: 70, epsom: 0.77, cacl2: 0.3171, soda: 0, gh: 26, kh: 48 },
+      { tds: 80, epsom: 0.62, cacl2: 0.2642, soda: 0, gh: 33, kh: 53 },
+      { tds: 90, epsom: 0.45, cacl2: 0.1887, soda: 0, gh: 39, kh: 58 },
+      { tds: 100, epsom: 0.32, cacl2: 0.1208, soda: 0, gh: 46, kh: 63 },
+      { tds: 110, epsom: 0.22, cacl2: 0.0755, soda: 0, gh: 52, kh: 68 },
+      { tds: 120, epsom: 0.12, cacl2: 0.0377, soda: 0, gh: 59, kh: 74 },
+    ];
+
+    /** Match coldbrewratiocalculator.com conversions and coarse-grind default. */
+    const ML_PER_FLOZ = 29.574;
+    const CUP_ML = 236.588;
+    const QUART_FLOZ = 32;
+    /** Grams of coarse grounds per US cup — space coffee takes in the jar. */
+    const COARSE_DENSITY_G_PER_CUP = 85;
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    /** Final hardness index: compounds reach 0 mg here (extends table past 120). */
+    const TDS_ZERO = 130;
+
+    function mineralsForTds(tds) {
+      // At/above 130 ppm, add nothing.
+      if (tds >= TDS_ZERO) {
+        return {
+          tds,
+          epsom: 0,
+          cacl2: 0,
+          soda: 0,
+          gh: null,
+          kh: null,
+          overHard: true,
+          loTds: TDS_ZERO,
+          hiTds: TDS_ZERO,
+          blend: 1,
+        };
+      }
+
+      // 10-ppm table rows as interpolation indexes, plus a 130 → 0 endpoint.
+      const points = [
+        ...HENDON_TABLE,
+        { tds: TDS_ZERO, epsom: 0, cacl2: 0, soda: 0, gh: null, kh: null },
+      ];
+
+      const exact = points.find((row) => row.tds === tds);
+      if (exact) {
+        return { ...exact, overHard: false, loTds: tds, hiTds: tds, blend: 0 };
+      }
+
+      let lo = points[0];
+      let hi = points[points.length - 1];
+      for (let i = 0; i < points.length - 1; i++) {
+        if (tds >= points[i].tds && tds <= points[i + 1].tds) {
+          lo = points[i];
+          hi = points[i + 1];
+          break;
+        }
+      }
+
+      const span = hi.tds - lo.tds || 1;
+      const blend = (tds - lo.tds) / span;
+      return {
+        tds,
+        // Blend grams-per-quart between neighboring 10-ppm indexes.
+        epsom: lerp(lo.epsom, hi.epsom, blend),
+        cacl2: lerp(lo.cacl2, hi.cacl2, blend),
+        soda: lerp(lo.soda, hi.soda, blend),
+        gh: lo.gh == null || hi.gh == null ? (lo.gh != null ? lo.gh : hi.gh) : lerp(lo.gh, hi.gh, blend),
+        kh: lo.kh == null || hi.kh == null ? (lo.kh != null ? lo.kh : hi.kh) : lerp(lo.kh, hi.kh, blend),
+        overHard: false,
+        loTds: lo.tds,
+        hiTds: hi.tds,
+        blend,
+      };
+    }
+
+    function calculate(containerOz, tds, ratio) {
+      const containerMl = containerOz * ML_PER_FLOZ;
+      // coffeeVol + waterVol = jar; coffeeVol = coffeeG * (cupMl / density)
+      const coffeeG = containerMl / (ratio + CUP_ML / COARSE_DENSITY_G_PER_CUP);
+      const waterMl = coffeeG * ratio;
+      const waterOz = waterMl / ML_PER_FLOZ;
+      const scale = waterOz / QUART_FLOZ;
+      const minerals = mineralsForTds(tds);
+
+      return {
+        waterOz,
+        coffeeG,
+        // Scale interpolated g/quart doses to this batch's water volume.
+        epsomMg: minerals.epsom * scale * 1000,
+        cacl2Mg: minerals.cacl2 * scale * 1000,
+        sodaMg: minerals.soda * scale * 1000,
+        epsomGPerQt: minerals.epsom,
+        cacl2GPerQt: minerals.cacl2,
+        sodaGPerQt: minerals.soda,
+        gh: minerals.gh,
+        kh: minerals.kh,
+        overHard: Boolean(minerals.overHard),
+        loTds: minerals.loTds,
+        hiTds: minerals.hiTds,
+        blend: minerals.blend,
+        tds,
+      };
+    }
+
+    function fmt(n, digits = 0) {
+      return n.toLocaleString("en-US", {
+        maximumFractionDigits: digits,
+        minimumFractionDigits: digits,
+      });
+    }
+
+    function parseInteger(raw) {
+      const trimmed = String(raw).trim();
+      if (!/^\d+$/.test(trimmed)) return null;
+      return Number(trimmed);
+    }
+
+    function setFieldError(id, message) {
+      const input = document.getElementById(id);
+      const error = document.getElementById(`${id}-error`);
+      input.classList.toggle("invalid", Boolean(message));
+      input.setAttribute("aria-invalid", message ? "true" : "false");
+      error.textContent = message || "";
+    }
+
+    function readInputs() {
+      const container = parseInteger(document.getElementById("container").value);
+      const tds = parseInteger(document.getElementById("tds").value);
+      const ratio = parseInteger(document.getElementById("ratio").value);
+      let ok = true;
+
+      if (container === null) {
+        setFieldError("container", "Enter a whole number.");
+        ok = false;
+      } else if (container < 1) {
+        setFieldError("container", "Must be at least 1 oz.");
+        ok = false;
+      } else {
+        setFieldError("container", "");
+      }
+
+      if (tds === null) {
+        setFieldError("tds", "Enter a whole number.");
+        ok = false;
+      } else {
+        setFieldError("tds", "");
+      }
+
+      if (ratio === null) {
+        setFieldError("ratio", "Enter a whole number.");
+        ok = false;
+      } else if (ratio < 4 || ratio > 16) {
+        setFieldError("ratio", "Use a ratio from 4 to 16.");
+        ok = false;
+      } else {
+        setFieldError("ratio", "");
+      }
+
+      return ok ? { container, tds, ratio } : null;
+    }
+
+    function stripNonDigits(event) {
+      const cleaned = event.target.value.replace(/\D/g, "");
+      if (event.target.value !== cleaned) event.target.value = cleaned;
+    }
+
+    function hardnessNote(out) {
+      if (out.overHard) return "TDS ≥ 130 · compound doses at 0 mg";
+      if (out.loTds === out.hiTds) {
+        return `Hardness ${out.tds} ppm · exact table index (${out.tds})`;
+      }
+      const pct = Math.round(out.blend * 100);
+      return `Hardness ${out.tds} ppm · ${pct}% between table indexes ${out.loTds}→${out.hiTds}`;
+    }
+
+    function renderResults(container, tds, ratio) {
+      const out = calculate(container, tds, ratio);
+      document.getElementById("results").innerHTML = `
+        <div class="result">
+          <div class="label">Water</div>
+          <div class="value">${fmt(out.waterOz, 1)}<span class="unit">fl oz</span></div>
+        </div>
+        <div class="result">
+          <div class="label">Coffee</div>
+          <div class="value">${fmt(out.coffeeG, 1)}<span class="unit">g</span></div>
+        </div>
+        <div class="result">
+          <div class="label">Minerals to add</div>
+          <div class="minerals">
+            <div class="mineral"><span>Epsom salt (MgSO₄·7H₂O)</span><span>${fmt(out.epsomMg)} mg</span></div>
+            <div class="mineral"><span>Calcium chloride (CaCl₂, anhydrous)</span><span>${fmt(out.cacl2Mg)} mg</span></div>
+            <div class="mineral"><span>Baking soda (NaHCO₃)</span><span>${fmt(out.sodaMg)} mg</span></div>
+          </div>
+        </div>
+        <div class="meta">
+          <div>${hardnessNote(out)}</div>
+          <div>Per-quart rates · epsom ${fmt(out.epsomGPerQt, 3)} g · CaCl₂ ${fmt(out.cacl2GPerQt, 3)} g · soda ${fmt(out.sodaGPerQt, 3)} g</div>
+          <div>${out.gh == null ? "No baseline GH/KH from table" : `Est. baseline · GH ${fmt(out.gh, 1)} · KH ${fmt(out.kh, 1)}`} · ratio 1:${ratio}</div>
+        </div>
+        ${out.overHard ? `<div class="warn" role="status">TDS is 130+ ppm — hardeners set to 0. Your water is already at or above the target zone.</div>` : ""}
+      `;
+    }
+
+    const form = document.getElementById("calc-form");
+    ["container", "tds", "ratio"].forEach((id) => {
+      document.getElementById(id).addEventListener("input", stripNonDigits);
+    });
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const values = readInputs();
+      if (!values) return;
+      renderResults(values.container, values.tds, values.ratio);
+    });
+  </script>
+</body>
+</html>
