@@ -222,6 +222,12 @@
       font-variant-numeric: tabular-nums;
     }
 
+    .result .value.secondary {
+      font-size: 1.15rem;
+      font-weight: 400;
+      color: var(--muted);
+    }
+
     .result .unit {
       font-family: "IBM Plex Mono", monospace;
       font-size: 0.85rem;
@@ -456,11 +462,14 @@
       const coffeeG = containerMl / (ratio + CUP_ML / COARSE_DENSITY_G_PER_CUP);
       const waterMl = coffeeG * ratio;
       const waterOz = waterMl / ML_PER_FLOZ;
+      // Water ≈ 1 g/ml, so grams ≈ ml.
+      const waterG = waterMl;
       const scale = waterOz / QUART_FLOZ;
       const minerals = mineralsForTds(tds);
 
       return {
         waterOz,
+        waterG,
         coffeeG,
         // Scale interpolated g/quart doses to this batch's water volume.
         epsomMg: minerals.epsom * scale * 1000,
@@ -556,6 +565,7 @@
         <div class="result">
           <div class="label">Water</div>
           <div class="value">${fmt(out.waterOz, 1)}<span class="unit">fl oz</span></div>
+          <div class="value secondary">${fmt(out.waterG, 1)}<span class="unit">g</span></div>
         </div>
         <div class="result">
           <div class="label">Coffee</div>
