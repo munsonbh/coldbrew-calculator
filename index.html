@@ -76,23 +76,27 @@
       .grid {
         grid-template-columns: 1fr 1fr;
         gap: 2rem;
-        align-items: start;
+        align-items: stretch;
       }
 
       .lede {
         grid-column: 1 / -1;
+      }
+
+      .grid > section,
+      .stack {
+        height: 100%;
+      }
+
+      .stack {
+        gap: 2rem;
+        align-content: start;
       }
     }
 
     .stack {
       display: grid;
       gap: 1.5rem;
-    }
-
-    @media (min-width: 720px) {
-      .stack {
-        gap: 2rem;
-      }
     }
 
     section {
