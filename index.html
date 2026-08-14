@@ -344,7 +344,7 @@
               <span class="prefix">1:</span>
               <input id="ratio" name="ratio" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="8" aria-describedby="ratio-hint" />
             </div>
-            <p class="hint" id="ratio-hint">Coffee : water by weight · whole number 4–16</p>
+            <p class="hint" id="ratio-hint">Coffee : recovered yield by weight · whole number 4–16</p>
             <p class="error" id="ratio-error" aria-live="polite"></p>
           </div>
 
@@ -368,6 +368,24 @@
             <p class="hint">Enter values and press Calculate.</p>
           </div>
         </section>
+
+        <section aria-labelledby="actual-heading">
+          <h2 id="actual-heading">Actual yield</h2>
+          <form id="actual-form" novalidate>
+            <div class="field">
+              <label for="actual-yield">Recovered liquid</label>
+              <input id="actual-yield" name="actual-yield" type="text" inputmode="decimal" autocomplete="off" />
+              <p class="hint">Grams after filtering, from this brew’s coffee dose</p>
+              <p class="error" id="actual-yield-error" aria-live="polite"></p>
+            </div>
+            <div class="actions">
+              <button type="submit">Check ratio</button>
+            </div>
+          </form>
+          <div class="results" id="actual-ratio">
+            <p class="hint">Weigh the yield, then check the true coffee : yield ratio.</p>
+          </div>
+        </section>
       </div>
     </div>
 
@@ -376,12 +394,14 @@
       Mineral doses scale from a 1-quart Hendon-style compound table keyed to tap TDS.
       Coffee and water share the jar using the same coarse-grind displacement math as
       https://coldbrewratiocalculator.com/coffee-ratio-calculator/
-      (grounds ≈ 85 g per cup of volume). Expected yield subtracts ~2 g retained liquid per g coffee.
+      (grounds ≈ 85 g per cup of volume). Ratio is coffee : recovered yield. Water-in is
+      ratio + ~1.4 g retained per g coffee (measured from a 48 oz coarse immersion batch;
+      generic calculators often use 2 g/g).
       Targets follow Hendon 2014 (https://doi.org/10.1021/jf501687c) — Mg-forward hardness, moderated alkalinity.
 
       Brew-sheet footnotes (not displayed; formerly under results):
       Hardness blend note · per-quart mineral rates · est. baseline GH/KH · ratio ·
-      yield after ~2 g retained / g coffee · absorbed ml
+      yield after ~1.4 g retained / g coffee · absorbed ml
     -->
   </div>
 
@@ -413,8 +433,12 @@
     const QUART_FLOZ = 32;
     /** Grams of coarse grounds per US cup — space coffee takes in the jar. */
     const COARSE_DENSITY_G_PER_CUP = 85;
-    /** Liquid retained by wet grounds, g water per g dry coffee. */
-    const ABSORPTION_G_PER_G = 2;
+    /**
+     * Liquid retained by wet grounds, g water per g dry coffee.
+     * 1.4 from a 48 oz / 1:4 coarse immersion batch (837 ml in, 541 g out, 209 g coffee).
+     * Industry default is often 2 g/g; that over-predicted retention here.
+     */
+    const ABSORPTION_G_PER_G = 1.4;
 
     function lerp(a, b, t) {
       return a + (b - a) * t;
@@ -481,9 +505,11 @@
     function calculate(containerOz, tds, ratio) {
       const containerMl = containerOz * ML_PER_FLOZ;
       const displacement = CUP_ML / COARSE_DENSITY_G_PER_CUP;
+      // Entered ratio is coffee : recovered yield. Extra water covers retention.
+      const waterParts = ratio + ABSORPTION_G_PER_G;
       // coffeeVol + waterVol = jar; coffeeVol = coffeeG * displacement
-      const coffeeG = containerMl / (ratio + displacement);
-      const waterMl = coffeeG * ratio;
+      const coffeeG = containerMl / (waterParts + displacement);
+      const waterMl = coffeeG * waterParts;
       const waterOz = waterMl / ML_PER_FLOZ;
       // Water ≈ 1 g/ml, so grams ≈ ml.
       const waterG = waterMl;
@@ -529,6 +555,14 @@
       if (!/^\d+$/.test(trimmed)) return null;
       return Number(trimmed);
     }
+
+    function parseDecimal(raw) {
+      const trimmed = String(raw).trim();
+      if (!/^\d+(\.\d+)?$/.test(trimmed)) return null;
+      return Number(trimmed);
+    }
+
+    let lastCoffeeG = null;
 
     function setFieldError(id, message) {
       const input = document.getElementById(id);
@@ -610,6 +644,7 @@
 
     function renderResults(container, tds, ratio) {
       const out = calculate(container, tds, ratio);
+      lastCoffeeG = out.coffeeG;
       document.getElementById("results").innerHTML = `
         <div class="result">
           <div class="label">Water</div>
@@ -638,17 +673,72 @@
       `;
     }
 
+    function renderActualRatio(actualYieldG) {
+      const panel = document.getElementById("actual-ratio");
+      if (lastCoffeeG == null || lastCoffeeG <= 0) {
+        panel.innerHTML = `<p class="hint">Calculate a brew sheet first so the coffee dose is known.</p>`;
+        return false;
+      }
+      if (!(actualYieldG > 0)) {
+        panel.innerHTML = `<p class="hint">Enter the grams of liquid you recovered.</p>`;
+        return false;
+      }
+      const actualRatio = actualYieldG / lastCoffeeG;
+      panel.innerHTML = `
+        <div class="result">
+          <div class="label">Actual strength</div>
+          <div class="value">1:${fmt(actualRatio, 1)}</div>
+          <div class="value secondary">${fmt(actualYieldG, 1)} g yield · ${fmt(lastCoffeeG, 1)} g coffee</div>
+        </div>
+      `;
+      return true;
+    }
+
     const form = document.getElementById("calc-form");
     ["container", "tds", "ratio"].forEach((id) => {
       document.getElementById(id).addEventListener("input", stripNonDigits);
+    });
+
+    document.getElementById("actual-yield").addEventListener("input", (event) => {
+      const cleaned = event.target.value.replace(/[^\d.]/g, "");
+      const parts = cleaned.split(".");
+      const next = parts.length <= 1 ? cleaned : `${parts[0]}.${parts.slice(1).join("")}`;
+      if (event.target.value !== next) event.target.value = next;
     });
 
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       const values = readInputs();
       if (!values) return;
-      saveLastCalculation(values);
+      saveLastCalculation({
+        ...values,
+        actualYield: parseDecimal(document.getElementById("actual-yield").value),
+      });
       renderResults(values.container, values.tds, values.ratio);
+      const actual = parseDecimal(document.getElementById("actual-yield").value);
+      if (actual != null) renderActualRatio(actual);
+    });
+
+    document.getElementById("actual-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const actual = parseDecimal(document.getElementById("actual-yield").value);
+      if (actual === null) {
+        setFieldError("actual-yield", "Enter a number.");
+        return;
+      }
+      if (actual <= 0) {
+        setFieldError("actual-yield", "Must be greater than 0.");
+        return;
+      }
+      setFieldError("actual-yield", "");
+      if (!renderActualRatio(actual)) return;
+      const current = loadLastCalculation() || {};
+      saveLastCalculation({
+        container: current.container ?? parseInteger(document.getElementById("container").value),
+        tds: current.tds ?? parseInteger(document.getElementById("tds").value),
+        ratio: current.ratio ?? parseInteger(document.getElementById("ratio").value),
+        actualYield: actual,
+      });
     });
 
     const saved = loadLastCalculation();
@@ -657,6 +747,10 @@
       document.getElementById("tds").value = String(saved.tds);
       document.getElementById("ratio").value = String(saved.ratio);
       renderResults(saved.container, saved.tds, saved.ratio);
+      if (typeof saved.actualYield === "number") {
+        document.getElementById("actual-yield").value = String(saved.actualYield);
+        renderActualRatio(saved.actualYield);
+      }
     }
   </script>
 </body>
