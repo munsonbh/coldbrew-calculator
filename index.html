@@ -45,7 +45,7 @@
     }
 
     header {
-      margin-bottom: 2.5rem;
+      margin-bottom: 1.25rem;
       animation: rise 480ms ease-out both;
     }
 
@@ -60,8 +60,11 @@
 
     .lede {
       color: var(--muted);
-      max-width: 38ch;
       margin: 0;
+    }
+
+    .lede a {
+      color: var(--ink);
     }
 
     .grid {
@@ -74,6 +77,10 @@
         grid-template-columns: 1fr 1fr;
         gap: 2rem;
         align-items: start;
+      }
+
+      .lede {
+        grid-column: 1 / -1;
       }
     }
 
@@ -256,29 +263,6 @@
       white-space: nowrap;
     }
 
-    .meta {
-      margin-top: 1rem;
-      padding-top: 0.9rem;
-      border-top: 1px solid #d8d8d4;
-      font-size: 0.75rem;
-      color: var(--muted);
-      display: grid;
-      gap: 0.35rem;
-    }
-
-    .note {
-      margin-top: 1.75rem;
-      font-size: 0.78rem;
-      color: var(--muted);
-      max-width: 62ch;
-      animation: rise 640ms ease-out both;
-      animation-delay: 100ms;
-    }
-
-    .note a {
-      color: var(--ink);
-    }
-
     .warn {
       margin-top: 0.85rem;
       border: 1.5px solid var(--ink);
@@ -309,10 +293,11 @@
   <div class="wrap">
     <header>
       <h1>Cold Brew Calculator</h1>
-      <p class="lede">Mason jar ratios, Hendon-style mineral targets, and coffee dose — mixed units on purpose.</p>
     </header>
 
     <div class="grid">
+      <p class="lede">Mason jar ratios, <a href="https://doi.org/10.1021/jf501687c" rel="noopener noreferrer">Hendon-style</a> mineral targets, and coffee dose — mixed units on purpose.</p>
+
       <section aria-labelledby="inputs-heading">
         <h2 id="inputs-heading">Inputs</h2>
 
@@ -355,15 +340,18 @@
       </section>
     </div>
 
-    <p class="note">
+    <!--
+      Page notes (not displayed):
       Mineral doses scale from a 1-quart Hendon-style compound table keyed to tap TDS.
       Coffee and water share the jar using the same coarse-grind displacement math as
-      <a href="https://coldbrewratiocalculator.com/coffee-ratio-calculator/" rel="noopener noreferrer">coldbrewratiocalculator.com</a>
+      https://coldbrewratiocalculator.com/coffee-ratio-calculator/
       (grounds ≈ 85 g per cup of volume). Expected yield subtracts ~2 g retained liquid per g coffee.
-      Targets follow
-      <a href="https://vauldt.github.io/all-about-coffee/coffee/coffee-brewing/hendon-study/" rel="noopener noreferrer">Hendon 2014</a>
-      (Mg-forward hardness, moderated alkalinity).
-    </p>
+      Targets follow Hendon 2014 (https://doi.org/10.1021/jf501687c) — Mg-forward hardness, moderated alkalinity.
+
+      Brew-sheet footnotes (not displayed; formerly under results):
+      Hardness blend note · per-quart mineral rates · est. baseline GH/KH · ratio ·
+      yield after ~2 g retained / g coffee · absorbed ml
+    -->
   </div>
 
   <script>
@@ -589,15 +577,6 @@
       if (event.target.value !== cleaned) event.target.value = cleaned;
     }
 
-    function hardnessNote(out) {
-      if (out.overHard) return "TDS ≥ 130 · compound doses at 0 mg";
-      if (out.loTds === out.hiTds) {
-        return `Hardness ${out.tds} ppm · exact table index (${out.tds})`;
-      }
-      const pct = Math.round(out.blend * 100);
-      return `Hardness ${out.tds} ppm · ${pct}% between table indexes ${out.loTds}→${out.hiTds}`;
-    }
-
     function renderResults(container, tds, ratio) {
       const out = calculate(container, tds, ratio);
       document.getElementById("results").innerHTML = `
@@ -607,15 +586,6 @@
           <div class="value secondary">${fmt(out.waterG, 1)}<span class="unit">g</span></div>
         </div>
         <div class="result">
-          <div class="label">Coffee</div>
-          <div class="value">${fmt(out.coffeeG, 1)}<span class="unit">g</span></div>
-        </div>
-        <div class="result">
-          <div class="label">Expected yield</div>
-          <div class="value">${fmt(out.yieldOz, 1)}<span class="unit">fl oz</span></div>
-          <div class="value secondary">${fmt(out.yieldMl, 1)}<span class="unit">ml</span></div>
-        </div>
-        <div class="result">
           <div class="label">Minerals to add</div>
           <div class="minerals">
             <div class="mineral"><span>Epsom salt (MgSO₄·7H₂O)</span><span>${fmt(out.epsomMg)} mg</span></div>
@@ -623,11 +593,14 @@
             <div class="mineral"><span>Baking soda (NaHCO₃)</span><span>${fmt(out.sodaMg)} mg</span></div>
           </div>
         </div>
-        <div class="meta">
-          <div>${hardnessNote(out)}</div>
-          <div>Per-quart rates · epsom ${fmt(out.epsomGPerQt, 3)} g · CaCl₂ ${fmt(out.cacl2GPerQt, 3)} g · soda ${fmt(out.sodaGPerQt, 3)} g</div>
-          <div>${out.gh == null ? "No baseline GH/KH from table" : `Est. baseline · GH ${fmt(out.gh, 1)} · KH ${fmt(out.kh, 1)}`} · ratio 1:${ratio}</div>
-          <div>Yield after ~${ABSORPTION_G_PER_G} g retained / g coffee · absorbed ${fmt(out.absorbedMl, 0)} ml</div>
+        <div class="result">
+          <div class="label">Coffee</div>
+          <div class="value">${fmt(out.coffeeG, 1)}<span class="unit">g</span></div>
+        </div>
+        <div class="result">
+          <div class="label">Expected yield</div>
+          <div class="value">${fmt(out.yieldOz, 1)}<span class="unit">fl oz</span></div>
+          <div class="value secondary">${fmt(out.yieldMl, 1)}<span class="unit">ml</span></div>
         </div>
         ${out.overHard ? `<div class="warn" role="status">TDS is 130+ ppm — hardeners set to 0. Your water is already at or above the target zone.</div>` : ""}
       `;
