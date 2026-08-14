@@ -439,6 +439,8 @@
      * Industry default is often 2 g/g; that over-predicted retention here.
      */
     const ABSORPTION_G_PER_G = 1.4;
+    /** Ready-to-drink target: coffee : finished liquid (shop-style cold brew). */
+    const DRINKABLE_RATIO = 14;
 
     function lerp(a, b, t) {
       return a + (b - a) * t;
@@ -563,6 +565,7 @@
     }
 
     let lastCoffeeG = null;
+    let lastExpectedYieldG = null;
 
     function setFieldError(id, message) {
       const input = document.getElementById(id);
@@ -645,6 +648,7 @@
     function renderResults(container, tds, ratio) {
       const out = calculate(container, tds, ratio);
       lastCoffeeG = out.coffeeG;
+      lastExpectedYieldG = out.yieldMl;
       document.getElementById("results").innerHTML = `
         <div class="result">
           <div class="label">Water</div>
@@ -667,10 +671,13 @@
       `;
       document.getElementById("yield").innerHTML = `
         <div class="result">
-          <div class="value">${fmt(out.yieldOz, 1)}<span class="unit">fl oz</span></div>
-          <div class="value secondary">${fmt(out.yieldMl, 1)} ml</div>
+          <div class="value">${fmt(out.yieldMl, 1)}<span class="unit">g</span></div>
+          <div class="value secondary">${fmt(out.yieldOz, 1)} fl oz</div>
         </div>
       `;
+      const actualField = document.getElementById("actual-yield");
+      actualField.value = fmt(out.yieldMl, 1).replace(/,/g, "");
+      renderActualRatio(out.yieldMl);
     }
 
     function renderActualRatio(actualYieldG) {
@@ -684,11 +691,21 @@
         return false;
       }
       const actualRatio = actualYieldG / lastCoffeeG;
+      const waterToDrinkableG = lastCoffeeG * DRINKABLE_RATIO - actualYieldG;
+      const dilutionLine =
+        waterToDrinkableG > 0
+          ? `${fmt(waterToDrinkableG, 0)} g water to reach 1:${DRINKABLE_RATIO}`
+          : `Already at or past 1:${DRINKABLE_RATIO} · no water to add`;
       panel.innerHTML = `
         <div class="result">
           <div class="label">Actual strength</div>
           <div class="value">1:${fmt(actualRatio, 1)}</div>
           <div class="value secondary">${fmt(actualYieldG, 1)} g yield · ${fmt(lastCoffeeG, 1)} g coffee</div>
+        </div>
+        <div class="result">
+          <div class="label">To drinkable (1:${DRINKABLE_RATIO})</div>
+          <div class="value">${waterToDrinkableG > 0 ? fmt(waterToDrinkableG, 0) : "0"}<span class="unit">g water</span></div>
+          <div class="value secondary">${dilutionLine}</div>
         </div>
       `;
       return true;
@@ -715,8 +732,6 @@
         actualYield: parseDecimal(document.getElementById("actual-yield").value),
       });
       renderResults(values.container, values.tds, values.ratio);
-      const actual = parseDecimal(document.getElementById("actual-yield").value);
-      if (actual != null) renderActualRatio(actual);
     });
 
     document.getElementById("actual-form").addEventListener("submit", (event) => {
