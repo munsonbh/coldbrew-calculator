@@ -104,12 +104,23 @@
       animation-delay: 80ms;
     }
 
-    h2 {
+    h3 {
       font-family: "Libre Baskerville", Georgia, serif;
-      font-size: 1.05rem;
+      font-size: 0.95rem;
       font-weight: 700;
-      margin: 0 0 1.1rem;
+      margin: 0 0 0.65rem;
       letter-spacing: -0.01em;
+    }
+
+    .yield-block {
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    #actual-form {
+      display: grid;
+      gap: 0.85rem;
+      margin-bottom: 1.5rem;
     }
 
     .field {
@@ -357,27 +368,31 @@
         </section>
 
         <section aria-labelledby="yield-heading">
-          <h2 id="yield-heading">Expected Yield</h2>
-          <div class="results" id="yield">
-            <p class="hint">Enter values and press Calculate.</p>
-          </div>
-        </section>
-
-        <section aria-labelledby="actual-heading">
-          <h2 id="actual-heading">Actual yield</h2>
-          <form id="actual-form" novalidate>
-            <div class="field">
-              <label for="actual-yield">Recovered liquid</label>
-              <input id="actual-yield" name="actual-yield" type="text" inputmode="decimal" autocomplete="off" />
-              <p class="hint">Grams after filtering, from this brew’s coffee dose</p>
-              <p class="error" id="actual-yield-error" aria-live="polite"></p>
+          <h2 id="yield-heading">Yield</h2>
+          <div class="yield-block">
+            <div>
+              <h3>Expected</h3>
+              <div class="results" id="yield">
+                <p class="hint">Enter values and press Calculate.</p>
+              </div>
             </div>
-            <div class="actions">
-              <button type="submit">Check ratio</button>
+            <div>
+              <h3>Actual</h3>
+              <form id="actual-form" novalidate>
+                <div class="field">
+                  <label for="actual-yield">Recovered liquid</label>
+                  <input id="actual-yield" name="actual-yield" type="text" inputmode="decimal" autocomplete="off" />
+                  <p class="hint">Grams after filtering, from this brew’s coffee dose</p>
+                  <p class="error" id="actual-yield-error" aria-live="polite"></p>
+                </div>
+                <div class="actions">
+                  <button type="submit">Check ratio</button>
+                </div>
+              </form>
+              <div class="results" id="actual-ratio">
+                <p class="hint">Weigh the yield, then check the true coffee : yield ratio.</p>
+              </div>
             </div>
-          </form>
-          <div class="results" id="actual-ratio">
-            <p class="hint">Weigh the yield, then check the true coffee : yield ratio.</p>
           </div>
         </section>
       </div>
