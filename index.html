@@ -84,6 +84,17 @@
       }
     }
 
+    .stack {
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 720px) {
+      .stack {
+        gap: 2rem;
+      }
+    }
+
     section {
       background: var(--panel);
       border: 1.5px solid var(--line);
@@ -91,8 +102,8 @@
       animation: rise 560ms ease-out both;
     }
 
-    section:nth-of-type(2) {
-      animation-delay: 60ms;
+    .stack section:nth-child(2) {
+      animation-delay: 80ms;
     }
 
     h2 {
@@ -221,15 +232,6 @@
       padding-bottom: 0;
     }
 
-    .result.rule-double {
-      border-bottom: 0;
-      box-shadow:
-        0 1px 0 #d8d8d4,
-        0 3px 0 #d8d8d4;
-      padding-bottom: 0.85rem;
-      margin-bottom: 2px;
-    }
-
     .result .label {
       font-size: 0.72rem;
       letter-spacing: 0.08em;
@@ -348,12 +350,21 @@
         </form>
       </section>
 
-      <section aria-labelledby="results-heading">
-        <h2 id="results-heading">Brew sheet</h2>
-        <div class="results" id="results">
-          <p class="hint">Enter values and press Calculate.</p>
-        </div>
-      </section>
+      <div class="stack">
+        <section aria-labelledby="results-heading">
+          <h2 id="results-heading">Brew sheet</h2>
+          <div class="results" id="results">
+            <p class="hint">Enter values and press Calculate.</p>
+          </div>
+        </section>
+
+        <section aria-labelledby="yield-heading">
+          <h2 id="yield-heading">Expected Yield</h2>
+          <div class="results" id="yield">
+            <p class="hint">Enter values and press Calculate.</p>
+          </div>
+        </section>
+      </div>
     </div>
 
     <!--
@@ -599,7 +610,7 @@
         <div class="result">
           <div class="label">Water</div>
           <div class="value">${fmt(out.waterOz, 1)}<span class="unit">fl oz</span></div>
-          <div class="value secondary">${fmt(out.waterG, 1)}<span class="unit">g</span></div>
+          <div class="value secondary">${fmt(out.waterG, 1)} ml, ${fmt(out.waterG, 1)} g</div>
         </div>
         <div class="result">
           <div class="label">Minerals to add</div>
@@ -609,16 +620,17 @@
             <div class="mineral"><span>Baking soda (NaHCO₃)</span><span>${fmt(out.sodaMg)} mg</span></div>
           </div>
         </div>
-        <div class="result rule-double">
+        <div class="result">
           <div class="label">Coffee</div>
           <div class="value">${fmt(out.coffeeG, 1)}<span class="unit">g</span></div>
         </div>
-        <div class="result">
-          <div class="label">Expected yield</div>
-          <div class="value">${fmt(out.yieldOz, 1)}<span class="unit">fl oz</span></div>
-          <div class="value secondary">${fmt(out.yieldMl, 1)}<span class="unit">ml</span></div>
-        </div>
         ${out.overHard ? `<div class="warn" role="status">TDS is 130+ ppm — hardeners set to 0. Your water is already at or above the target zone.</div>` : ""}
+      `;
+      document.getElementById("yield").innerHTML = `
+        <div class="result">
+          <div class="value">${fmt(out.yieldOz, 1)}<span class="unit">fl oz</span></div>
+          <div class="value secondary">${fmt(out.yieldMl, 1)} ml</div>
+        </div>
       `;
     }
 
