@@ -359,7 +359,8 @@
       Mineral doses scale from a 1-quart Hendon-style compound table keyed to tap TDS.
       Coffee and water share the jar using the same coarse-grind displacement math as
       <a href="https://coldbrewratiocalculator.com/coffee-ratio-calculator/" rel="noopener noreferrer">coldbrewratiocalculator.com</a>
-      (grounds ≈ 85 g per cup of volume). Targets follow
+      (grounds ≈ 85 g per cup of volume). Expected yield subtracts ~2 g retained liquid per g coffee.
+      Targets follow
       <a href="https://vauldt.github.io/all-about-coffee/coffee/coffee-brewing/hendon-study/" rel="noopener noreferrer">Hendon 2014</a>
       (Mg-forward hardness, moderated alkalinity).
     </p>
@@ -393,6 +394,8 @@
     const QUART_FLOZ = 32;
     /** Grams of coarse grounds per US cup — space coffee takes in the jar. */
     const COARSE_DENSITY_G_PER_CUP = 85;
+    /** Liquid retained by wet grounds, g water per g dry coffee. */
+    const ABSORPTION_G_PER_G = 2;
 
     function lerp(a, b, t) {
       return a + (b - a) * t;
@@ -458,12 +461,16 @@
 
     function calculate(containerOz, tds, ratio) {
       const containerMl = containerOz * ML_PER_FLOZ;
-      // coffeeVol + waterVol = jar; coffeeVol = coffeeG * (cupMl / density)
-      const coffeeG = containerMl / (ratio + CUP_ML / COARSE_DENSITY_G_PER_CUP);
+      const displacement = CUP_ML / COARSE_DENSITY_G_PER_CUP;
+      // coffeeVol + waterVol = jar; coffeeVol = coffeeG * displacement
+      const coffeeG = containerMl / (ratio + displacement);
       const waterMl = coffeeG * ratio;
       const waterOz = waterMl / ML_PER_FLOZ;
       // Water ≈ 1 g/ml, so grams ≈ ml.
       const waterG = waterMl;
+      const absorbedMl = coffeeG * ABSORPTION_G_PER_G;
+      const yieldMl = Math.max(0, waterMl - absorbedMl);
+      const yieldOz = yieldMl / ML_PER_FLOZ;
       const scale = waterOz / QUART_FLOZ;
       const minerals = mineralsForTds(tds);
 
@@ -471,6 +478,9 @@
         waterOz,
         waterG,
         coffeeG,
+        yieldOz,
+        yieldMl,
+        absorbedMl,
         // Scale interpolated g/quart doses to this batch's water volume.
         epsomMg: minerals.epsom * scale * 1000,
         cacl2Mg: minerals.cacl2 * scale * 1000,
@@ -507,6 +517,35 @@
       input.classList.toggle("invalid", Boolean(message));
       input.setAttribute("aria-invalid", message ? "true" : "false");
       error.textContent = message || "";
+    }
+
+    const STORAGE_KEY = "coldbrew-calculator:last";
+
+    function saveLastCalculation(values) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(values));
+      } catch (_) {
+        /* private mode / quota — ignore */
+      }
+    }
+
+    function loadLastCalculation() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (
+          !parsed ||
+          typeof parsed.container !== "number" ||
+          typeof parsed.tds !== "number" ||
+          typeof parsed.ratio !== "number"
+        ) {
+          return null;
+        }
+        return parsed;
+      } catch (_) {
+        return null;
+      }
     }
 
     function readInputs() {
@@ -572,6 +611,11 @@
           <div class="value">${fmt(out.coffeeG, 1)}<span class="unit">g</span></div>
         </div>
         <div class="result">
+          <div class="label">Expected yield</div>
+          <div class="value">${fmt(out.yieldOz, 1)}<span class="unit">fl oz</span></div>
+          <div class="value secondary">${fmt(out.yieldMl, 1)}<span class="unit">ml</span></div>
+        </div>
+        <div class="result">
           <div class="label">Minerals to add</div>
           <div class="minerals">
             <div class="mineral"><span>Epsom salt (MgSO₄·7H₂O)</span><span>${fmt(out.epsomMg)} mg</span></div>
@@ -583,6 +627,7 @@
           <div>${hardnessNote(out)}</div>
           <div>Per-quart rates · epsom ${fmt(out.epsomGPerQt, 3)} g · CaCl₂ ${fmt(out.cacl2GPerQt, 3)} g · soda ${fmt(out.sodaGPerQt, 3)} g</div>
           <div>${out.gh == null ? "No baseline GH/KH from table" : `Est. baseline · GH ${fmt(out.gh, 1)} · KH ${fmt(out.kh, 1)}`} · ratio 1:${ratio}</div>
+          <div>Yield after ~${ABSORPTION_G_PER_G} g retained / g coffee · absorbed ${fmt(out.absorbedMl, 0)} ml</div>
         </div>
         ${out.overHard ? `<div class="warn" role="status">TDS is 130+ ppm — hardeners set to 0. Your water is already at or above the target zone.</div>` : ""}
       `;
@@ -597,8 +642,17 @@
       event.preventDefault();
       const values = readInputs();
       if (!values) return;
+      saveLastCalculation(values);
       renderResults(values.container, values.tds, values.ratio);
     });
+
+    const saved = loadLastCalculation();
+    if (saved) {
+      document.getElementById("container").value = String(saved.container);
+      document.getElementById("tds").value = String(saved.tds);
+      document.getElementById("ratio").value = String(saved.ratio);
+      renderResults(saved.container, saved.tds, saved.ratio);
+    }
   </script>
 </body>
 </html>
