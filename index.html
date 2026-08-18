@@ -337,10 +337,17 @@
           </div>
 
           <div class="field">
-            <label for="tds">Water hardness (TDS)</label>
-            <input id="tds" name="tds" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="0" />
-            <p class="hint">Tap reading in ppm, whole number · 0 = distilled</p>
-            <p class="error" id="tds-error" aria-live="polite"></p>
+            <label for="hardness">Hardness (GH)</label>
+            <input id="hardness" name="hardness" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="7" aria-describedby="hardness-hint" />
+            <p class="hint" id="hardness-hint">as CaCO₃, ppm · Bull Run tap ≈ 7 · 0 = distilled</p>
+            <p class="error" id="hardness-error" aria-live="polite"></p>
+          </div>
+
+          <div class="field">
+            <label for="alkalinity">Alkalinity (KH)</label>
+            <input id="alkalinity" name="alkalinity" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="29" aria-describedby="alkalinity-hint" />
+            <p class="hint" id="alkalinity-hint">as CaCO₃, ppm · Bull Run tap ≈ 29 · 0 = distilled</p>
+            <p class="error" id="alkalinity-error" aria-live="polite"></p>
           </div>
 
           <div class="field">
@@ -400,41 +407,44 @@
 
     <!--
       Page notes (not displayed):
-      Mineral doses scale from a 1-quart Hendon-style compound table keyed to tap TDS.
-      Coffee and water share the jar using the same coarse-grind displacement math as
+      Mineral doses scale from a 1-quart Hendon-style compound table. Hardeners
+      (Epsom, CaCl2) interpolate by GH; baking soda interpolates by KH. Defaults
+      are Portland 100% Bull Run (GH 7, KH 29) — not TDS, which is mostly silica
+      and other non-extracting ions. Coffee and water share the jar using the same
+      coarse-grind displacement math as
       https://coldbrewratiocalculator.com/coffee-ratio-calculator/
       (grounds ≈ 85 g per cup of volume). Ratio is coffee : recovered yield. Water-in is
       ratio + ~1.4 g retained per g coffee (measured from a 48 oz coarse immersion batch;
       generic calculators often use 2 g/g).
       Targets follow Hendon 2014 (https://doi.org/10.1021/jf501687c) — Mg-forward hardness, moderated alkalinity.
-
-      Brew-sheet footnotes (not displayed; formerly under results):
-      Hardness blend note · per-quart mineral rates · est. baseline GH/KH · ratio ·
-      yield after ~1.4 g retained / g coffee · absorbed ml
     -->
   </div>
 
   <script>
     /**
-     * Grams of each compound per US quart (32 fl oz), by tap TDS (ppm).
+     * Grams of each compound per US quart (32 fl oz), keyed to baseline GH / KH.
      * Source: source/hendon compounds.csv
      * CaCl2 column is anhydrous (converted from CaCl2·2H2O × 110.98/147.01).
+     * Hardeners interpolate by GH; baking soda interpolates by KH.
      */
     const HENDON_TABLE = [
-      { tds: 0, epsom: 1.43, cacl2: 0.5209, soda: 0.41, gh: 0, kh: 0 },
-      { tds: 10, epsom: 1.38, cacl2: 0.5058, soda: 0.32, gh: 2, kh: 7 },
-      { tds: 20, epsom: 1.33, cacl2: 0.4831, soda: 0.22, gh: 4, kh: 15 },
-      { tds: 30, epsom: 1.28, cacl2: 0.4680, soda: 0.12, gh: 6, kh: 22 },
-      { tds: 40, epsom: 1.23, cacl2: 0.4529, soda: 0.03, gh: 8, kh: 29 },
-      { tds: 50, epsom: 1.18, cacl2: 0.4379, soda: 0, gh: 10, kh: 37 },
-      { tds: 60, epsom: 0.95, cacl2: 0.3699, soda: 0, gh: 19, kh: 44 },
-      { tds: 70, epsom: 0.77, cacl2: 0.3171, soda: 0, gh: 26, kh: 48 },
-      { tds: 80, epsom: 0.62, cacl2: 0.2642, soda: 0, gh: 33, kh: 53 },
-      { tds: 90, epsom: 0.45, cacl2: 0.1887, soda: 0, gh: 39, kh: 58 },
-      { tds: 100, epsom: 0.32, cacl2: 0.1208, soda: 0, gh: 46, kh: 63 },
-      { tds: 110, epsom: 0.22, cacl2: 0.0755, soda: 0, gh: 52, kh: 68 },
-      { tds: 120, epsom: 0.12, cacl2: 0.0377, soda: 0, gh: 59, kh: 74 },
+      { gh: 0, kh: 0, epsom: 1.43, cacl2: 0.5209, soda: 0.41 },
+      { gh: 2, kh: 7, epsom: 1.38, cacl2: 0.5058, soda: 0.32 },
+      { gh: 4, kh: 15, epsom: 1.33, cacl2: 0.4831, soda: 0.22 },
+      { gh: 6, kh: 22, epsom: 1.28, cacl2: 0.4680, soda: 0.12 },
+      { gh: 8, kh: 29, epsom: 1.23, cacl2: 0.4529, soda: 0.03 },
+      { gh: 10, kh: 37, epsom: 1.18, cacl2: 0.4379, soda: 0 },
+      { gh: 19, kh: 44, epsom: 0.95, cacl2: 0.3699, soda: 0 },
+      { gh: 26, kh: 48, epsom: 0.77, cacl2: 0.3171, soda: 0 },
+      { gh: 33, kh: 53, epsom: 0.62, cacl2: 0.2642, soda: 0 },
+      { gh: 39, kh: 58, epsom: 0.45, cacl2: 0.1887, soda: 0 },
+      { gh: 46, kh: 63, epsom: 0.32, cacl2: 0.1208, soda: 0 },
+      { gh: 52, kh: 68, epsom: 0.22, cacl2: 0.0755, soda: 0 },
+      { gh: 59, kh: 74, epsom: 0.12, cacl2: 0.0377, soda: 0 },
     ];
+    /** Portland Water Bureau, 100% Bull Run. */
+    const BULL_RUN_GH = 7;
+    const BULL_RUN_KH = 29;
 
     /** Match coldbrewratiocalculator.com conversions and coarse-grind default. */
     const ML_PER_FLOZ = 29.574;
@@ -455,65 +465,51 @@
       return a + (b - a) * t;
     }
 
-    /** Final hardness index: compounds reach 0 mg here (extends table past 120). */
-    const TDS_ZERO = 130;
+    /** Hardeners reach 0 mg at this GH (extends table past GH 59). */
+    const GH_ZERO = 130;
 
-    function mineralsForTds(tds) {
-      // At/above 130 ppm, add nothing.
-      if (tds >= TDS_ZERO) {
-        return {
-          tds,
-          epsom: 0,
-          cacl2: 0,
-          soda: 0,
-          gh: null,
-          kh: null,
-          overHard: true,
-          loTds: TDS_ZERO,
-          hiTds: TDS_ZERO,
-          blend: 1,
-        };
+    function lerpFields(points, key, value, fields) {
+      if (value <= points[0][key]) {
+        return Object.fromEntries(fields.map((field) => [field, points[0][field]]));
       }
-
-      // 10-ppm table rows as interpolation indexes, plus a 130 → 0 endpoint.
-      const points = [
-        ...HENDON_TABLE,
-        { tds: TDS_ZERO, epsom: 0, cacl2: 0, soda: 0, gh: null, kh: null },
-      ];
-
-      const exact = points.find((row) => row.tds === tds);
-      if (exact) {
-        return { ...exact, overHard: false, loTds: tds, hiTds: tds, blend: 0 };
+      const last = points[points.length - 1];
+      if (value >= last[key]) {
+        return Object.fromEntries(fields.map((field) => [field, last[field]]));
       }
-
-      let lo = points[0];
-      let hi = points[points.length - 1];
       for (let i = 0; i < points.length - 1; i++) {
-        if (tds >= points[i].tds && tds <= points[i + 1].tds) {
-          lo = points[i];
-          hi = points[i + 1];
-          break;
+        const lo = points[i];
+        const hi = points[i + 1];
+        if (value >= lo[key] && value <= hi[key]) {
+          const span = hi[key] - lo[key] || 1;
+          const t = (value - lo[key]) / span;
+          return Object.fromEntries(fields.map((field) => [field, lerp(lo[field], hi[field], t)]));
         }
       }
+      return Object.fromEntries(fields.map((field) => [field, last[field]]));
+    }
 
-      const span = hi.tds - lo.tds || 1;
-      const blend = (tds - lo.tds) / span;
+    function mineralsForWater(gh, kh) {
+      const overHard = gh >= GH_ZERO;
+      const hardenerPoints = [
+        ...HENDON_TABLE,
+        { gh: GH_ZERO, epsom: 0, cacl2: 0 },
+      ];
+      const hardeners = overHard
+        ? { epsom: 0, cacl2: 0 }
+        : lerpFields(hardenerPoints, "gh", gh, ["epsom", "cacl2"]);
+      const soda = lerpFields(HENDON_TABLE, "kh", kh, ["soda"]).soda;
+
       return {
-        tds,
-        // Blend grams-per-quart between neighboring 10-ppm indexes.
-        epsom: lerp(lo.epsom, hi.epsom, blend),
-        cacl2: lerp(lo.cacl2, hi.cacl2, blend),
-        soda: lerp(lo.soda, hi.soda, blend),
-        gh: lo.gh == null || hi.gh == null ? (lo.gh != null ? lo.gh : hi.gh) : lerp(lo.gh, hi.gh, blend),
-        kh: lo.kh == null || hi.kh == null ? (lo.kh != null ? lo.kh : hi.kh) : lerp(lo.kh, hi.kh, blend),
-        overHard: false,
-        loTds: lo.tds,
-        hiTds: hi.tds,
-        blend,
+        gh,
+        kh,
+        epsom: hardeners.epsom,
+        cacl2: hardeners.cacl2,
+        soda,
+        overHard,
       };
     }
 
-    function calculate(containerOz, tds, ratio) {
+    function calculate(containerOz, gh, kh, ratio) {
       const containerMl = containerOz * ML_PER_FLOZ;
       const displacement = CUP_ML / COARSE_DENSITY_G_PER_CUP;
       // Entered ratio is coffee : recovered yield. Extra water covers retention.
@@ -528,7 +524,7 @@
       const yieldMl = Math.max(0, waterMl - absorbedMl);
       const yieldOz = yieldMl / ML_PER_FLOZ;
       const scale = waterOz / QUART_FLOZ;
-      const minerals = mineralsForTds(tds);
+      const minerals = mineralsForWater(gh, kh);
 
       return {
         waterOz,
@@ -547,10 +543,6 @@
         gh: minerals.gh,
         kh: minerals.kh,
         overHard: Boolean(minerals.overHard),
-        loTds: minerals.loTds,
-        hiTds: minerals.hiTds,
-        blend: minerals.blend,
-        tds,
       };
     }
 
@@ -599,15 +591,18 @@
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return null;
         const parsed = JSON.parse(raw);
-        if (
-          !parsed ||
-          typeof parsed.container !== "number" ||
-          typeof parsed.tds !== "number" ||
-          typeof parsed.ratio !== "number"
-        ) {
+        if (!parsed || typeof parsed.container !== "number" || typeof parsed.ratio !== "number") {
           return null;
         }
-        return parsed;
+        if (typeof parsed.gh === "number" && typeof parsed.kh === "number") {
+          return parsed;
+        }
+        // Pre-GH/KH saves stored a TDS proxy. Distilled (0) still maps; anything
+        // else was not actual hardness, so fall back to Bull Run.
+        if (parsed.tds === 0) {
+          return { ...parsed, gh: 0, kh: 0 };
+        }
+        return { ...parsed, gh: BULL_RUN_GH, kh: BULL_RUN_KH };
       } catch (_) {
         return null;
       }
@@ -615,7 +610,8 @@
 
     function readInputs() {
       const container = parseInteger(document.getElementById("container").value);
-      const tds = parseInteger(document.getElementById("tds").value);
+      const gh = parseInteger(document.getElementById("hardness").value);
+      const kh = parseInteger(document.getElementById("alkalinity").value);
       const ratio = parseInteger(document.getElementById("ratio").value);
       let ok = true;
 
@@ -629,11 +625,18 @@
         setFieldError("container", "");
       }
 
-      if (tds === null) {
-        setFieldError("tds", "Enter a whole number.");
+      if (gh === null) {
+        setFieldError("hardness", "Enter a whole number.");
         ok = false;
       } else {
-        setFieldError("tds", "");
+        setFieldError("hardness", "");
+      }
+
+      if (kh === null) {
+        setFieldError("alkalinity", "Enter a whole number.");
+        ok = false;
+      } else {
+        setFieldError("alkalinity", "");
       }
 
       if (ratio === null) {
@@ -646,7 +649,7 @@
         setFieldError("ratio", "");
       }
 
-      return ok ? { container, tds, ratio } : null;
+      return ok ? { container, gh, kh, ratio } : null;
     }
 
     function stripNonDigits(event) {
@@ -654,8 +657,8 @@
       if (event.target.value !== cleaned) event.target.value = cleaned;
     }
 
-    function renderResults(container, tds, ratio) {
-      const out = calculate(container, tds, ratio);
+    function renderResults(container, gh, kh, ratio) {
+      const out = calculate(container, gh, kh, ratio);
       lastCoffeeG = out.coffeeG;
       lastExpectedYieldG = out.yieldMl;
       document.getElementById("results").innerHTML = `
@@ -676,7 +679,7 @@
           <div class="label">Coffee</div>
           <div class="value">${fmt(out.coffeeG, 1)}<span class="unit">g</span></div>
         </div>
-        ${out.overHard ? `<div class="warn" role="status">TDS is 130+ ppm — hardeners set to 0. Your water is already at or above the target zone.</div>` : ""}
+        ${out.overHard ? `<div class="warn" role="status">Hardness is 130+ ppm — hardeners set to 0. Your water is already at or above the target zone.</div>` : ""}
       `;
       document.getElementById("yield").innerHTML = `
         <div class="result">
@@ -721,7 +724,7 @@
     }
 
     const form = document.getElementById("calc-form");
-    ["container", "tds", "ratio"].forEach((id) => {
+    ["container", "hardness", "alkalinity", "ratio"].forEach((id) => {
       document.getElementById(id).addEventListener("input", stripNonDigits);
     });
 
@@ -740,7 +743,7 @@
         ...values,
         actualYield: parseDecimal(document.getElementById("actual-yield").value),
       });
-      renderResults(values.container, values.tds, values.ratio);
+      renderResults(values.container, values.gh, values.kh, values.ratio);
     });
 
     document.getElementById("actual-form").addEventListener("submit", (event) => {
@@ -759,7 +762,8 @@
       const current = loadLastCalculation() || {};
       saveLastCalculation({
         container: current.container ?? parseInteger(document.getElementById("container").value),
-        tds: current.tds ?? parseInteger(document.getElementById("tds").value),
+        gh: current.gh ?? parseInteger(document.getElementById("hardness").value),
+        kh: current.kh ?? parseInteger(document.getElementById("alkalinity").value),
         ratio: current.ratio ?? parseInteger(document.getElementById("ratio").value),
         actualYield: actual,
       });
@@ -768,9 +772,10 @@
     const saved = loadLastCalculation();
     if (saved) {
       document.getElementById("container").value = String(saved.container);
-      document.getElementById("tds").value = String(saved.tds);
+      document.getElementById("hardness").value = String(saved.gh);
+      document.getElementById("alkalinity").value = String(saved.kh);
       document.getElementById("ratio").value = String(saved.ratio);
-      renderResults(saved.container, saved.tds, saved.ratio);
+      renderResults(saved.container, saved.gh, saved.kh, saved.ratio);
       if (typeof saved.actualYield === "number") {
         document.getElementById("actual-yield").value = String(saved.actualYield);
         renderActualRatio(saved.actualYield);
